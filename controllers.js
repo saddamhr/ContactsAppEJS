@@ -3,7 +3,7 @@ const Contact = require('./Contact')
 exports.getAllContact = (req, res) => {
     Contact.find()
         .then(contacts => {
-            res.render('index', {contacts})
+            res.render('index', { contacts, error: {} })
         })
         .catch(e => {
             console.log(e)
@@ -29,6 +29,27 @@ exports.getSingleContact = (req, res) => {
 
 exports.createContact = (req, res) => {
     let { name, phone, email } = req.body
+
+    let error = {}
+
+    if (!name) error.name = 'Please provide a name'
+    if (!phone) error.phone = 'Please provide a number'
+    if (!email) error.email = 'Please provide a email'
+
+    let isError = Object.keys(error).length > 0
+    if (isError) {
+        Contact.find()
+            .then(contacts => {
+                return res.render('index', { contacts, error })
+            })
+            .catch(e => {
+                console.log(e)
+                return res.json({
+                    message: 'Error Occurred'
+                })
+            })
+    }
+
     let contact = new Contact({
         name,
         email,
@@ -36,11 +57,14 @@ exports.createContact = (req, res) => {
     })
     contact.save()
         .then(c => {
-            res.json(c)
+            Contact.find()
+                .then(contacts => {
+                    return res.render('index', { contacts, error: {} })
+                })
         })
         .catch(e => {
             console.log(e)
-            res.json({
+            return res.json({
                 message: 'Error Occurred'
             })
         })
@@ -73,8 +97,11 @@ exports.updateContact = (req, res) => {
 exports.deleteContact = (req, res) => {
     let { id } = req.params
     Contact.findOneAndDelete({ _id: id })
-        .then(contact => {
-            res.json(contact)
+        .then(() => {
+            Contact.find()
+                .then(contacts => {
+                    res.render('index', { contacts, error: {} })
+                })
         })
         .catch(e => {
             console.log(e)
