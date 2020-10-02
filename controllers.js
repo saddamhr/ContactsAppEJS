@@ -28,7 +28,7 @@ exports.getSingleContact = (req, res) => {
 }
 
 exports.createContact = (req, res) => {
-    let { name, phone, email } = req.body
+    let { name, phone, email, id } = req.body
 
     let error = {}
 
@@ -49,25 +49,47 @@ exports.createContact = (req, res) => {
                 })
             })
     }
-
-    let contact = new Contact({
-        name,
-        email,
-        phone
-    })
-    contact.save()
-        .then(c => {
+    if (id) {
+        Contact.findOneAndUpdate(
+            { _id: id },
+            {
+                $set: {
+                    name, email, phone
+                }
+            }
+        )
+        .then(()=> {
             Contact.find()
-                .then(contacts => {
-                    return res.render('index', { contacts, error: {} })
-                })
+            .then(contacts => {
+                res.render('index', {contacts, error: {}})
+            })
         })
         .catch(e => {
             console.log(e)
-            return res.json({
+            res.json({
                 message: 'Error Occurred'
             })
         })
+    } else {
+        let contact = new Contact({
+            name,
+            email,
+            phone
+        })
+        contact.save()
+            .then(c => {
+                Contact.find()
+                    .then(contacts => {
+                        return res.render('index', { contacts, error: {} })
+                    })
+            })
+            .catch(e => {
+                console.log(e)
+                return res.json({
+                    message: 'Error Occurred'
+                })
+            })
+    }
 }
 
 exports.updateContact = (req, res) => {
